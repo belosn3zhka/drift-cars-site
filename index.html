@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRIFT CARS — MTA:SA сервер</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-base:#0A0D14;
+    --bg-panel:#11151F;
+    --bg-panel-2:#161B28;
+    --line:#232838;
+    --violet:#B24BF3;
+    --cyan:#29F1FF;
+    --warm:#FF6B35;
+    --text:#F2F0F5;
+    --muted:#8B90A3;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg-base);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.6;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{
+    font-family:'Chakra Petch',sans-serif;
+    line-height:1.05;
+    letter-spacing:0.01em;
+  }
+  a{color:inherit;text-decoration:none;}
+  img,svg{display:block;max-width:100%;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 32px;}
+
+  /* subtle asphalt texture */
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(178,75,243,0.06), transparent 40%),
+      radial-gradient(circle at 85% 60%, rgba(41,241,255,0.05), transparent 45%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(10,13,20,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  nav .wrap{
+    display:flex;align-items:center;justify-content:space-between;
+    height:72px;
+  }
+  .logo{
+    font-family:'Chakra Petch',sans-serif;
+    font-weight:700;
+    font-size:20px;
+    letter-spacing:0.02em;
+    display:flex;align-items:center;gap:10px;
+  }
+  .logo span{color:var(--violet);}
+  .nav-links{display:flex;gap:32px;align-items:center;}
+  .nav-links a{
+    font-size:14px;color:var(--muted);
+    transition:color .2s;
+  }
+  .nav-links a:hover{color:var(--text);}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:11px 22px;
+    border-radius:6px;
+    font-family:'Chakra Petch',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    transition:transform .15s, box-shadow .2s;
+    border:1px solid transparent;
+    cursor:pointer;
+  }
+  .btn-primary{
+    background:var(--violet);
+    color:#0A0D14;
+    box-shadow:0 0 0 rgba(178,75,243,0);
+  }
+  .btn-primary:hover{
+    transform:translateY(-1px);
+    box-shadow:0 8px 24px rgba(178,75,243,0.35);
+  }
+  .btn-ghost{
+    border-color:var(--line);
+    color:var(--text);
+  }
+  .btn-ghost:hover{border-color:var(--cyan);color:var(--cyan);}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    padding:110px 0 90px;
+    overflow:hidden;
+  }
+  .hero .wrap{
+    display:grid;
+    grid-template-columns:1.1fr 0.9fr;
+    gap:40px;
+    align-items:center;
+    position:relative;
+    z-index:2;
+  }
+  .eyebrow-row{
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:22px;
+  }
+  .dot-live{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--cyan);
+    box-shadow:0 0 10px var(--cyan);
+    animation:pulse 1.8s infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1;} 50%{opacity:0.35;}
+  }
+  .eyebrow-row span{font-size:13px;color:var(--muted);}
+  .hero h1{
+    font-size:clamp(48px,7vw,84px);
+    font-weight:700;
+    font-style:italic;
+    transform:skewX(-3deg);
+    margin-bottom:22px;
+  }
+  .hero h1 em{
+    font-style:italic;
+    background:linear-gradient(100deg,var(--violet),var(--cyan));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .hero p.lead{
+    font-size:17px;
+    color:var(--muted);
+    max-width:460px;
+    margin-bottom:34px;
+  }
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;}
+
+  .skid-wrap{
+    position:relative;
+    height:420px;
+  }
+  .skid-wrap svg{
+    position:absolute;inset:0;
+    width:100%;height:100%;
+  }
+  .skid-path{
+    fill:none;
+    stroke-width:3;
+    stroke-linecap:round;
+    stroke-dasharray:1400;
+    stroke-dashoffset:1400;
+    animation:draw 2.4s ease forwards .3s;
+  }
+  @keyframes draw{
+    to{stroke-dashoffset:0;}
+  }
+
+  /* ---------- MARQUEE ---------- */
+  .marquee{
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    background:var(--bg-panel);
+    padding:16px 0;
+    overflow:hidden;
+    white-space:nowrap;
+    position:relative;
+    z-index:2;
+  }
+  .marquee-track{
+    display:inline-flex;
+    gap:48px;
+    animation:scroll 26s linear infinite;
+  }
+  .marquee-track span{
+    font-family:'Chakra Petch',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    color:var(--muted);
+    letter-spacing:0.03em;
+    display:inline-flex;align-items:center;gap:10px;
+  }
+  .marquee-track span::before{
+    content:"◆";
+    color:var(--violet);
+    font-size:10px;
+  }
+  @keyframes scroll{
+    from{transform:translateX(0);}
+    to{transform:translateX(-50%);}
+  }
+
+  /* ---------- ABOUT ---------- */
+  .about{
+    padding:110px 0;
+    position:relative;z-index:2;
+  }
+  .about .wrap{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:64px;
+    align-items:start;
+  }
+  .section-label{
+    font-size:13px;color:var(--cyan);
+    font-family:'Chakra Petch',sans-serif;
+    font-weight:600;
+    margin-bottom:14px;
+  }
+  .about h2{
+    font-size:clamp(30px,4vw,42px);
+    margin-bottom:20px;
+    max-width:440px;
+  }
+  .about p{color:var(--muted);max-width:440px;margin-bottom:16px;}
+  .stat-grid{
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .stat{
+    background:var(--bg-panel);
+    padding:26px 24px;
+  }
+  .stat .num{
+    font-family:'Chakra Petch',sans-serif;
+    font-size:32px;font-weight:700;
+    color:var(--text);
+  }
+  .stat .num em{color:var(--violet);font-style:normal;}
+  .stat .lbl{font-size:13px;color:var(--muted);margin-top:4px;}
+
+  /* ---------- FEATURES ---------- */
+  .features{
+    padding:60px 0 110px;
+    position:relative;z-index:2;
+  }
+  .features .head{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    margin-bottom:56px;
+    flex-wrap:wrap;gap:20px;
+  }
+  .features h2{font-size:clamp(28px,3.6vw,38px);max-width:480px;}
+  .feature-list{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+  }
+  .feature{
+    background:var(--bg-panel);
+    padding:38px 30px;
+    position:relative;
+    transition:background .25s;
+  }
+  .feature:hover{background:var(--bg-panel-2);}
+  .feature:nth-child(2){padding-top:56px;}
+  .feature .ico{
+    width:44px;height:44px;
+    margin-bottom:22px;
+  }
+  .feature h3{
+    font-size:19px;margin-bottom:10px;font-weight:600;
+  }
+  .feature p{font-size:14px;color:var(--muted);}
+
+  /* ---------- JOIN ---------- */
+  .join{
+    padding:100px 0;
+    position:relative;z-index:2;
+    background:var(--bg-panel);
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+  }
+  .join .wrap{
+    display:grid;grid-template-columns:0.9fr 1.1fr;gap:60px;align-items:center;
+  }
+  .join h2{font-size:clamp(28px,3.6vw,40px);margin-bottom:18px;max-width:420px;}
+  .join p{color:var(--muted);max-width:420px;margin-bottom:0;}
+  .join-steps{list-style:none;}
+  .join-steps li{
+    display:flex;gap:18px;
+    padding:22px 0;
+    border-bottom:1px solid var(--line);
+    align-items:flex-start;
+  }
+  .join-steps li:last-child{border-bottom:none;}
+  .step-n{
+    font-family:'Chakra Petch',sans-serif;
+    font-weight:700;font-size:14px;
+    color:var(--cyan);
+    border:1px solid var(--line);
+    border-radius:50%;
+    width:30px;height:30px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .step-body h4{font-size:15px;font-weight:600;margin-bottom:4px;}
+  .step-body p{font-size:13px;color:var(--muted);}
+  .ip-box{
+    margin-top:28px;
+    display:flex;align-items:center;
+    background:var(--bg-base);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+    gap:12px;
+  }
+  .ip-box code{
+    font-family:'Chakra Petch',monospace;
+    font-size:15px;color:var(--cyan);
+    flex:1;
+  }
+  .ip-box button{
+    background:transparent;border:1px solid var(--line);
+    color:var(--muted);font-size:12px;
+    padding:7px 12px;border-radius:6px;
+    cursor:pointer;font-family:'Inter',sans-serif;
+    transition:all .2s;
+  }
+  .ip-box button:hover{border-color:var(--violet);color:var(--violet);}
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    padding:56px 0 40px;
+    position:relative;z-index:2;
+  }
+  footer .wrap{
+    display:flex;justify-content:space-between;align-items:center;
+    flex-wrap:wrap;gap:20px;
+  }
+  footer .logo{font-size:16px;}
+  .foot-links{display:flex;gap:26px;}
+  .foot-links a{font-size:13px;color:var(--muted);}
+  .foot-links a:hover{color:var(--text);}
+  .foot-note{font-size:12px;color:#565B6E;margin-top:24px;}
+
+  @media(max-width:860px){
+    .hero .wrap, .about .wrap, .join .wrap{grid-template-columns:1fr;}
+    .skid-wrap{height:260px;order:-1;}
+    .feature-list{grid-template-columns:1fr;}
+    .feature:nth-child(2){padding-top:38px;}
+    .nav-links{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><img src="avatar.png" alt="Drift Cars" style="width:32px;height:32px;border-radius:6px;">DRIFT <span>CARS</span></div>
+    <div class="nav-links">
+      <a href="#about">О проекте</a>
+      <a href="#features">Возможности</a>
+      <a href="#join">Как подключиться</a>
+    </div>
+    <a href="#join" class="btn btn-primary">Играть</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow-row">
+        <div class="dot-live" id="status-dot"></div>
+        <span id="status-text">Проверяем статус сервера…</span>
+      </div>
+      <h1>Заноси<br>на <em>своих</em><br>условиях.</h1>
+      <p class="lead">Стант на кастомных мотоциклах, глубокий тюнинг и дрифт-физика, заточенная под контроль заноса, а не под случайность.</p>
+      <div class="hero-cta">
+        <a href="#join" class="btn btn-primary">Подключиться</a>
+        <a href="#features" class="btn btn-ghost">Что внутри</a>
+      </div>
+    </div>
+    <div class="skid-wrap">
+      <svg viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg">
+        <path class="skid-path" d="M40,340 C120,360 140,260 90,220 C40,180 60,90 160,80 C260,70 260,180 340,160 C400,145 400,80 360,40" stroke="url(#g1)"/>
+        <path class="skid-path" style="animation-delay:.6s" d="M60,380 C140,390 150,300 110,270 C60,235 90,140 190,130 C280,122 280,220 350,205" stroke="url(#g2)" opacity="0.5"/>
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#B24BF3"/>
+            <stop offset="100%" stop-color="#29F1FF"/>
+          </linearGradient>
+          <linearGradient id="g2" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0%" stop-color="#29F1FF"/>
+            <stop offset="100%" stop-color="#B24BF3"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<div class="marquee">
+  <div class="marquee-track">
+    <span>Кастомные мотоциклы</span>
+    <span>Дрифт-физика</span>
+    <span>Глубокий тюнинг</span>
+    <span>Стант-парк</span>
+    <span>Сохранение прогресса</span>
+    <span>Своя экономика</span>
+    <span>Кастомные мотоциклы</span>
+    <span>Дрифт-физика</span>
+    <span>Глубокий тюнинг</span>
+    <span>Стант-парк</span>
+    <span>Сохранение прогресса</span>
+    <span>Своя экономика</span>
+  </div>
+</div>
+
+<section class="about" id="about">
+  <div class="wrap">
+    <div>
+      <div class="section-label">О ПРОЕКТЕ</div>
+      <h2>Не ещё один фрирум, а сервер под конкретный вайб.</h2>
+      <p>Drift Cars — это MTA:SA проект, собранный вокруг одной идеи: занос должен зависеть от руки игрока, а не от рандома хендлинга. Мотоциклы для станта настроены отдельно от машин для дрифта — физика не универсальная, а под каждый класс техники.</p>
+      <p>Прогресс, тюнинг и статистика сохраняются в базе — можно возвращаться в любое время, ничего не пропадёт.</p>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="num">1.5<em>x</em></div><div class="lbl">Версия клиента</div></div>
+      <div class="stat"><div class="num">24<em>/7</em></div><div class="lbl">Аптайм сервера</div></div>
+      <div class="stat"><div class="num">MySQL</div><div class="lbl">Хранение прогресса</div></div>
+      <div class="stat"><div class="num">RU</div><div class="lbl">Комьюнити</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="head">
+      <h2>Три вещи, вокруг которых всё построено</h2>
+    </div>
+    <div class="feature-list">
+      <div class="feature">
+        <svg class="ico" viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="20" stroke="#B24BF3" stroke-width="2"/><path d="M14 26l6-12 6 12M17 22h10" stroke="#B24BF3" stroke-width="2" stroke-linecap="round"/></svg>
+        <h3>Стант на мотоциклах</h3>
+        <p>Кастомные модели, настроенная физика прыжков и баланса — трюки читаются предсказуемо, без случайных падений на ровном месте.</p>
+      </div>
+      <div class="feature">
+        <svg class="ico" viewBox="0 0 44 44" fill="none"><rect x="8" y="14" width="28" height="18" rx="4" stroke="#29F1FF" stroke-width="2"/><circle cx="15" cy="32" r="3" stroke="#29F1FF" stroke-width="2"/><circle cx="29" cy="32" r="3" stroke="#29F1FF" stroke-width="2"/></svg>
+        <h3>Тюнинг машин</h3>
+        <p>Визуальный и технический апгрейд в одном меню: обвесы, винилы, цвет — и отдельно двигатель, тормоза, подвеска под свой стиль езды.</p>
+      </div>
+      <div class="feature">
+        <svg class="ico" viewBox="0 0 44 44" fill="none"><path d="M8 30c6-14 14-14 14-2s8 12 14-2" stroke="#FF6B35" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        <h3>Дрифт-физика</h3>
+        <p>Отдельный хендлинг под занос: сцепление, момент и подвеска настроены так, чтобы машина уходила боком управляемо, а не случайно.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="join" id="join">
+  <div class="wrap">
+    <div>
+      <div class="section-label">ПОДКЛЮЧЕНИЕ</div>
+      <h2>Зайти на сервер — три шага.</h2>
+      <p>Нужен установленный MTA:SA клиент версии 1.5x. Если ещё не стоит — скачай с официального сайта multitheftauto.com.</p>
+      <div class="ip-box">
+        <code id="ipcode">195.18.27.241:22113</code>
+        <button onclick="copyIp()">Копировать</button>
+      </div>
+    </div>
+    <ul class="join-steps">
+      <li>
+        <div class="step-n">1</div>
+        <div class="step-body">
+          <h4>Открой MTA:SA</h4>
+          <p>Запусти клиент через ярлык или лаунчер.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-n">2</div>
+        <div class="step-body">
+          <h4>Вкладка "Прямое подключение"</h4>
+          <p>Введи IP сервера из поля слева и нажми "Подключиться".</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-n">3</div>
+        <div class="step-body">
+          <h4>Выбери транспорт и катай</h4>
+          <p>Первый спавн — с базовым байком и машиной, дальше открывается тюнинг.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="logo">DRIFT <span>CARS</span></div>
+    <div class="foot-links">
+      <a href="#about">О проекте</a>
+      <a href="#features">Возможности</a>
+      <a href="#join">Подключиться</a>
+    </div>
+  </div>
+  <div class="wrap"><div class="foot-note">© 2026 Drift Cars. Проект на базе Multi Theft Auto: San Andreas.</div></div>
+</footer>
+
+<script>
+// --- Живой статус сервера через mtasa-api.com (неофициальный публичный API для MTA:SA) ---
+const SERVER_IP = "195.18.27.241";
+const SERVER_PORT = 22113;
+const ASE_PORT = SERVER_PORT + 123; // у MTA ASE-порт = игровой порт + 123
+
+async function updateServerStatus(){
+  const dot = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  try{
+    const res = await fetch(`https://mtasa-api.com/server/?ip=${SERVER_IP}&asePort=${ASE_PORT}`);
+    if(!res.ok) throw new Error('bad response');
+    const data = await res.json();
+    dot.style.background = '#29F1FF';
+    text.textContent = `Сервер онлайн · ${data.playerCount}/${data.playerSlots} игроков`;
+  }catch(e){
+    dot.style.background = '#565B6E';
+    text.textContent = 'Не удалось получить статус сервера';
+  }
+}
+updateServerStatus();
+setInterval(updateServerStatus, 60000); // обновление раз в минуту
+
+function copyIp(){
+  const text = document.getElementById('ipcode').innerText;
+  navigator.clipboard.writeText(text);
+  const btn = event.target;
+  const old = btn.innerText;
+  btn.innerText = 'Скопировано';
+  setTimeout(()=>btn.innerText = old, 1500);
+}
+</script>
+
+</body>
+</html>
